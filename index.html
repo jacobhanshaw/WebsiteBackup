@@ -1,0 +1,252 @@
+<!DOCTYPE HTML>
+<meta charset="UTF-8">
+<html>
+<head>
+
+<script src = "VelociraptorHelperFunctions.js">
+</script>
+
+<script>
+
+var xPos, yPos, timer, frameRate = 10, screenWidth, screenHeight;
+var raptors, numRaptors, imageScaleWidth, imageScaleHeight, maxJumpHeight;
+var raptorImage, raptorImageMouthOpen, raptorImageDucking, raptorImageDuckingMoutOpen; 
+var background_image;
+var enemies, standingEnemiesImages, jumpingEnemiesImages, mineImage;
+
+//Objects
+function Raptor(x, y) {
+	this.x = x;
+	this.y = y;
+	this.image = raptorImage;
+	this.frontFoot = x + (imageScaleWidth * (2/3)); //MUST BE REDONE WHEN SCREEN SIZE IS CHANGED
+	this.backFoot = this.frontFoot - (imageScaleWidth/7);
+	this.speed = 3;
+	this.backgroundLocation = 0;
+	//this.backgroundImage = backgroundImage; ADD LATER
+	this.height = 0;
+	this.jumping = false;
+	this.ducking = false;
+	this.chomping = 0;
+	this.dead = false;
+	this.enemies = new Array();
+}
+
+function Enemy(x, y, image, row, jumping, ducking, isMine) {
+	this.x = x;
+	this.y = y;
+	this.image = image;
+	this.row = row;
+	this.jumping = jumping;
+	this.ducking = ducking;
+	this.isMine = isMine;
+}
+
+//Input
+function key_press(event){
+	switch(event.keyCode){
+		case    16:
+		case    96:  // 0 was hit
+			for(i=0; i< numRaptors; i++){
+			if(!raptors[i].dead) raptors[i].ducking = true;
+			}
+			break;
+		case    65:
+		case    97:  // 1 was hit
+			//0 duck
+			if(!raptors[0].dead) raptors[0].ducking = true;
+			break;
+		case    83:
+		case    98:  // 2 was hit
+			//1 duck
+			if(!raptors[1].dead) raptors[1].ducking = true;
+			break;
+		case    68:
+		case    99:  // 3 was hit
+			//2 duck
+			if(!raptors[2].dead) raptors[2].ducking = true;
+			break;
+		case     81:
+		case  	100: // 4 was hit (look up ASCII key code for letters)
+			//alert("Num Pad 4 pressed.");
+			//if(!raptors[0].jumping && raptors[0].height == 0) 
+			if(!raptors[0].dead) raptors[0].jumping = true;
+			break;
+		case     87:
+		case    101: // 5 was hit (look up ASCII key code for letters)
+			//alert("Num Pad 5 pressed.");
+			//if(!raptors[1].jumping && raptors[1].height == 0) 
+			if(!raptors[1].dead) raptors[1].jumping = true;
+			break;
+		case     69:
+		case    102: // 6 was hit (look up ASCII key code for letters)
+			//alert("Num Pad 6 pressed.");
+			//if(!raptors[2].jumping && raptors[2].height == 0) 
+			if(!raptors[2].dead) raptors[2].jumping = true;
+			break;
+		case     32:
+		case    107: //+ hit
+			for(i=0; i< numRaptors; i++){
+				if(!raptors[i].dead) raptors[i].jumping = true;
+			}
+			break; 
+		default: 
+			alert(event.keyCode);
+			break;
+	}
+}
+
+function page_load(){
+	xPos = 0;
+	yPos = 0;
+        setSize();
+	window.onresize = setSize;
+
+	window.addEventListener('keydown', key_press, true);
+	
+	loadImages();
+
+	numRaptors = 3;
+	
+	screenHeightPerRow = Math.round(screenHeight/numRaptors);
+	heightOffGround = Math.round(screenHeightPerRow/7);
+	raptorDistanceFromLeft = Math.round(screenWidth/16);
+	maxJumpHeight = Math.round(screenHeight/16);
+
+	enemies = new Array();
+        raptors = new Array();
+
+	imageScaleHeight = Math.round(screenHeight/(numRaptors * 3));
+	imageScaleWidth = Math.round(imageScaleHeight * (137/88));
+
+
+        for(i=0; i< numRaptors; i++){
+	raptors[i] = new Raptor(raptorDistanceFromLeft, (screenHeightPerRow*(i+1))-imageScaleHeight - heightOffGround);
+	}	
+
+	frame();
+}
+
+function adjustRaptors(animate){
+
+        for(i=0; i< numRaptors; i++){
+	if(animate){
+	  	if(raptors[i].jumping) raptors[i].height +=2;
+		if(raptors[i].height > maxJumpHeight) raptors[i].jumping = false;
+		if(!raptors[i].jumping && raptors[i].height > 0) raptors[i].height -=2;
+	}
+	else raptors[i].x = raptorDistanceFromLeft; 
+	raptors[i].y = (screenHeightPerRow*(i+1))- imageScaleHeight - heightOffGround - raptors[i].height;
+	
+	}
+}
+
+function frame(){
+
+	draw_world();
+
+	timer = setTimeout("frame()", frameRate);
+}
+
+function draw_world(){
+	var canvas = document.getElementById("canvas");
+	if (canvas.getContext) {
+		ctx = canvas.getContext("2d");
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.fillStyle = "rgb(0,0,0)";
+		ctx.fillRect(0,0, screenWidth, screenHeight);
+
+	for(i=0; i< numRaptors; i++){
+		ctx.drawImage(background_image, raptors[i].backgroundLocation, screenHeightPerRow * i, screenWidth, screenHeightPerRow);
+
+		ctx.drawImage(background_image, raptors[i].backgroundLocation+screenWidth, screenHeightPerRow * i, screenWidth, screenHeightPerRow);
+		if(!raptors[i].dead) raptors[i].backgroundLocation -= raptors[i].speed;
+		if(raptors[i].backgroundLocation <= -screenWidth) raptors[i].backgroundLocation = 0;
+	}
+	
+	adjustRaptors(true);
+
+	drawEnemies();
+
+        for(i=0; i< numRaptors; i++){
+		ctx.drawImage(raptors[i].image, raptors[i].x, raptors[i].y, imageScaleWidth, imageScaleHeight);
+	}
+
+        }
+}
+
+function drawEnemies() {
+	var canvas = document.getElementById("canvas");
+	if (canvas.getContext) {
+	ctx = canvas.getContext("2d");
+	for(i=0; i< numRaptors; i++){
+		if(Math.floor(Math.random()*200) > 198){
+			var height =  (raptors[i].y+maxJumpHeight + raptors[i].height);
+			//alert("Result: " + height + " raptor height: " + raptors[i].y + " jump height: " + maxJumpHeight);
+			enemies.push(new Enemy(screenWidth, height, mineImage, i, false, false, true));
+		}
+
+	}
+
+	for(i=0; i< enemies.length; i++){
+		if(!raptors[enemies[i].row].dead){
+		var enemyImageScaleHeight = Math.round(screenHeight/(numRaptors * 8));
+		var enemyImageScaleWidth = enemyImageScaleHeight * (enemies[i].image.height/enemies[i].image.width);
+		if(raptors[enemies[i].row].frontFoot >= enemies[i].x && !(raptors[enemies[i].row].backFoot >= (enemies[i].x + enemyImageScaleWidth)) && !((raptors[enemies[i].row].y + imageScaleHeight - (imageScaleHeight/6)) < enemies[i].y)){
+		 raptors[enemies[i].row].dead = true;
+		// alert(raptors[enemies[i].row].y + " " + " " + imageScaleHeight + " " + enemies[i].row + " is dead.");
+		}
+
+		ctx.drawImage(enemies[i].image, enemies[i].x, enemies[i].y, enemyImageScaleWidth, enemyImageScaleHeight);
+		enemies[i].x -= raptors[(enemies[i].row)].speed;
+		if(enemies[i].x + enemies[i].image.width < 0) enemies.splice(i, 1);
+}
+	}
+}
+}
+
+function mouse_move(event) {
+	var x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("canvas").offsetLeft;
+	var y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("canvas").offsetTop;
+	
+	// x and y now hold the position onscreen of the mouse after the mouse was moved
+	//hero_raptor.x = x;
+	//hero_raptor.y = y;
+}
+
+function mouse_down(event) {
+	var x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("canvas").offsetLeft;
+	var y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("canvas").offsetTop;
+	
+	// x and y now hold the position onscreen of the mouse after the mouse was moved
+	//hero_raptor.x = x;
+	//hero_raptor.y = y;
+}
+
+function loadImages() {
+	raptorImage = new Image();
+	raptorImage.src = "images/velociraptor.gif";
+	
+	raptorImageMouthOpen = new Image();
+	raptorImageMouthOpen.src = "images/velocmouthopen.png";
+
+	raptorImageDucking = new Image();
+	raptorImageDucking.src = "images/ducking.png";
+
+	raptorImageDuckingMoutOpen = new Image(); 
+	raptorImageDuckingMoutOpen.src = "images/duckingmouthopen.png"
+
+	mineImage = new Image();
+	mineImage.src = "images/mine.png";
+
+	background_image = new Image();
+	background_image.src = "images/background.png";
+}
+
+</script>
+</head>
+<body onload="page_load()">
+<canvas style="cursor:none;" onmousemove="mouse_move(event)" onmousedown="mouse_down(event)" id="canvas" width="800" height="600"></canvas>
+</body>
+</html>
+

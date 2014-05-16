@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="qcar_config.xsd">
+  <Tracking>
+    <ImageTarget name="Napkin" size="247 173" />
+    <ImageTarget name="Container" size="247 173" />
+    <ImageTarget name="pillow" size="247 173" />
+    <ImageTarget name="MBP" size="247 173" />
+    <ImageTarget name="Wall" size="247 173" />
+  </Tracking>
+</QCARConfig>
